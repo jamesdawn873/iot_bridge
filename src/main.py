@@ -19,10 +19,11 @@ write = influx.write_api(write_options=SYNCHRONOUS)
 def on_message(client, userdata, msg):
     payload = json.loads(msg.payload)
     device = payload["device_id"]
+    bucket = payload.get("bucket", INFLUX_BUCKET)
     lines = []
     for s in payload["samples"]:
         lines.append(f"voltage,device_id={device} value={s['v']} {s['t']}")
-    write.write(bucket=INFLUX_BUCKET, record="\n".join(lines))
+    write.write(bucket=bucket, record="\n".join(lines))
 
 
 mqttc = mqtt.Client()

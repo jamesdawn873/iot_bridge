@@ -40,7 +40,7 @@ def on_message(client, userdata, msg):
         print(f"[ERROR] Failed to process message: {e}")
 
 
-mqttc = mqtt.Client(CallbackAPIVersion.VERSION1)
+mqttc = mqtt.Client(CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
 mqttc.connect(MQTT_BROKER, MQTT_PORT)

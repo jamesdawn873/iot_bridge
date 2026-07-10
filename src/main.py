@@ -2,7 +2,7 @@ import os
 import json
 import paho.mqtt.client as mqtt
 from influxdb_client import InfluxDBClient
-from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb_client.client.write_api import SYNCHRONOUS, WritePrecision
 
 MQTT_BROKER = os.getenv('MQTT_BROKER', 'emqx')
 MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
@@ -13,7 +13,7 @@ INFLUX_ORG = os.getenv('INFLUX_ORG', 'calit2')
 INFLUX_BUCKET = os.getenv('INFLUX_BUCKET', 'calit2-bucket')
 
 influx = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
-write = influx.write_api(write_options=SYNCHRONOUS)
+write = influx.write_api(write_options=SYNCHRONOUS, write_precision=WritePrecision.MS)
 
 
 def on_connect(client, userdata, flags, reason_code, properties):

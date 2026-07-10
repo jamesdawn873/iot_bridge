@@ -27,15 +27,16 @@ def on_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload)
         device = payload["device_id"]
+        bucket = payload.get("bucket") or INFLUX_BUCKET
         lines = []
         for s in payload["samples"]:
             lines.append(f"voltage,device_id={device} value={s['v']} {s['t']}")
         write.write(
-            bucket=INFLUX_BUCKET,
+            bucket=bucket,
             record="\n".join(lines),
             write_precision=WritePrecision.MS,
         )
-        print(f"[INFLUX] Wrote {len(lines)} samples for device {device}")
+        print(f"[INFLUX] Wrote {len(lines)} samples for device {device} → {bucket}")
     except Exception as e:
         print(f"[ERROR] Failed to process message: {e}")
 

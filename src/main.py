@@ -1,8 +1,9 @@
 import os
 import json
 import paho.mqtt.client as mqtt
+from paho.mqtt.client import CallbackAPIVersion
 from influxdb_client import InfluxDBClient
-from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb_client.client.write_api import SYNCHRONOUS, WritePrecision
 
 MQTT_BROKER = os.getenv('MQTT_BROKER', 'emqx')
 MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
@@ -16,17 +17,31 @@ influx = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
 write = influx.write_api(write_options=SYNCHRONOUS)
 
 
+def on_connect(client, userdata, flags, reason_code, properties):
+    print(f"[MQTT] Connected to {MQTT_BROKER}:{MQTT_PORT} (rc={reason_code})")
+    client.subscribe(MQTT_TOPIC)
+    print(f"[MQTT] Subscribed to {MQTT_TOPIC}")
+
+
 def on_message(client, userdata, msg):
-    payload = json.loads(msg.payload)
-    device = payload["device_id"]
-    lines = []
-    for s in payload["samples"]:
-        lines.append(f"voltage,device_id={device} value={s['v']} {s['t']}")
-    write.write(bucket=INFLUX_BUCKET, record="\n".join(lines))
+    try:
+        payload = json.loads(msg.payload)
+        device = payload["device_id"]
+        lines = []
+        for s in payload["samples"]:
+            lines.append(f"voltage,device_id={device} value={s['v']} {s['t']}")
+        write.write(
+            bucket=INFLUX_BUCKET,
+            record="\n".join(lines),
+            write_precision=WritePrecision.MS,
+        )
+        print(f"[INFLUX] Wrote {len(lines)} samples for device {device}")
+    except Exception as e:
+        print(f"[ERROR] Failed to process message: {e}")
 
 
-mqttc = mqtt.Client()
+mqttc = mqtt.Client(CallbackAPIVersion.VERSION1)
+mqttc.on_connect = on_connect
 mqttc.on_message = on_message
 mqttc.connect(MQTT_BROKER, MQTT_PORT)
-mqttc.subscribe(MQTT_TOPIC)
 mqttc.loop_forever()
